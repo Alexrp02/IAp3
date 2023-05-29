@@ -1,0 +1,21 @@
+{
+    "version": "2.0.0",
+    "configurations": [     
+        {
+            "name": "Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/build/ParchisGame",
+            "cwd": "${workspaceRoot}",
+            "preLaunchTask": "build",
+            // set environment variables
+            // "environment": [
+            //     {
+            //         "name": "DISPLAY",
+            //         "value": ":1.0"
+            //     }
+            // ],
+            
+        }
+    ]
+}
