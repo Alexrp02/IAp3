@@ -131,6 +131,9 @@ class ParchisBros{
 
 class Parchis{
     private:
+        //ParchisBros clase amiga
+        friend class ParchisBros;
+
         //Tablero
         Board board;
         //Dados
@@ -178,6 +181,8 @@ class Parchis{
         bool horn_move;
         bool shock_move;
         bool boo_move;
+        bool mega_mushroom_move;
+        bool mushroom_move;
 
         vector <pair <color, int>> pieces_destroyed_by_star;
         vector <pair <color, int>> pieces_crushed_by_megamushroom;
@@ -229,6 +234,24 @@ class Parchis{
          *
          */
         void initGame();
+
+        /**
+         * @brief Función que genera el siguiente movimiento siguiendo un orden
+         * descendente de los dados.
+         *
+         * Estos métodos funcionan de la siguiente forma. Dado un estado del juego, a partir de los parámetros
+         * de color, id de ficha y dado que se le pasen por referencia, asociados a un determinado movimiento
+         * en el tablero, determinará el siguiente hijo que se expandirá en el árbol de búsqueda.
+         * Los parámetros se actualizarán de forma que se correspondan con el movimiento necesario para generar
+         * el nuevo hijo desarrollado. Inicialmente, para generar el primer hijo de una ramificación, se deben
+         * pasar los parámetros inicializados a -1.
+         *
+         * @param c_piece
+         * @param id_piece
+         * @param dice
+         * @return Parchis
+         */
+        Parchis generateNextMoveDescending(color & c_piece,  int & id_piece, int & dice) const;
 
     public:
         /**
@@ -428,10 +451,26 @@ class Parchis{
 
         /**
          * @brief Función que devuelve el valor del atributo shock_move
-         * 
+         *
          */
         inline const bool isShockMove() const{
             return shock_move;
+        }
+
+        /**
+         * @brief Función que devuelve el valor del atributo mega_mushroom_move
+         *
+         */
+        inline const bool isMegaMushroomMove() const{
+            return mega_mushroom_move;
+        }
+
+        /**
+         * @brief Función que devuelve el valor del atributo mushroom_move
+         *
+         */
+        inline const bool isMushroomMove() const{
+            return mushroom_move;
         }
 
         /**
@@ -839,25 +878,6 @@ class Parchis{
         }
 
         /**
-         * @brief Función que genera el siguiente movimiento siguiendo un orden
-         * descendente de los dados.
-         *
-         * Estos métodos funcionan de la siguiente forma. Dado un estado del juego, a partir de los parámetros
-         * de color, id de ficha y dado que se le pasen por referencia, asociados a un determinado movimiento
-         * en el tablero, determinará el siguiente hijo que se expandirá en el árbol de búsqueda.
-         * Los parámetros se actualizarán de forma que se correspondan con el movimiento necesario para generar
-         * el nuevo hijo desarrollado. Inicialmente, para generar el primer hijo de una ramificación, se deben
-         * pasar los parámetros inicializados a -1.
-         *
-         * @param c_piece
-         * @param id_piece
-         * @param dice
-         * @return Parchis
-         */
-        Parchis generateNextMoveDescending(color & c_piece,  int & id_piece, int & dice) const;
-
-
-        /**
          * @brief Función que devuelve la variable update_board
          *
          * @return true
@@ -918,7 +938,7 @@ class Parchis{
         * @brief Devuelve el número de fichas de un color que estan en casa.
         *
         * Thanks Mario :)
-        * 
+        *
         * @return int
         */
         int piecesAtHome(color player) const;
@@ -1086,30 +1106,30 @@ class Parchis{
 
         /**
          * @brief Función que devuelve si se adquirió un objeto en el último turno.
-         * 
-         * @return true 
-         * @return false 
+         *
+         * @return true
+         * @return false
          */
         bool itemAcquired() const;
 
         /**
          * @brief Función que devuelve el objeto adquirido en el último turno.
          * Devuelve -1 en caso de que no se haya adquºirido ningún objeto.
-         * 
-         * @return item_type 
+         *
+         * @return item_type
          */
         item_type getItemAcquired() const;
 
         /**
          * @brief Función que indica si el número de dado especificado está asociado a dado especial o no.
-         * 
-         * @param dice 
-         * @return true 
-         * @return false 
+         *
+         * @param dice
+         * @return true
+         * @return false
          */
         bool isSpecialDice(int dice) const;
 
-        /** 
+        /**
          * Función que indica si el número de dado especificado está asociado a dado normal o no.
          *
          * @param dice
@@ -1157,8 +1177,8 @@ class Parchis{
 
         /**
          * @brief Devuelve la ficha comida por un movimiento normal en el último turno.
-         * 
-         * @return const pair<color, int> 
+         *
+         * @return const pair<color, int>
          */
         const pair<color, int> eatenPiece() const;
 };
