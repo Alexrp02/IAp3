@@ -225,6 +225,33 @@ void AIPlayer::thinkMejorOpcion(color &c_piece, int &id_piece, int &dice) const
     }
 }
 
+double AIPlayer::valoracionDistancia(const Parchis &estado, int jugador)
+{
+    // Sumamos la distancia que hay desde todas las fichas del jugador hasta la meta.
+    double valoracion = 0;
+    vector<color> colores = estado.getPlayerColors(jugador);
+    for (int i = 0; i < colores.size(); i++)
+    {
+        color c = colores[i];
+        for (int j = 0; j < 3; j++)
+        {
+            valoracion += estado.distanceToGoal(c, j);
+        }
+    }
+    // Le restamos la distancia que tiene el otro jugador
+    int oponente = (jugador + 1) % 2;
+    colores = estado.getPlayerColors(oponente);
+    for (int i = 0; i < colores.size(); i++)
+    {
+        color c = colores[i];
+        for (int j = 0; j < 3; j++)
+        {
+            valoracion -= estado.distanceToGoal(c, j);
+        }
+    }
+    return valoracion;
+}
+
 double AIPlayer::ValoracionTest(const Parchis &estado, int jugador)
 {
     // Heurística de prueba proporcionada para validar el funcionamiento del algoritmo de búsqueda.
@@ -294,21 +321,111 @@ double AIPlayer::ValoracionTest(const Parchis &estado, int jugador)
     }
 }
 
+double AIPlayer::Poda_AlfaBeta(const Parchis &parchis, int jugador, int profundidad, int profundidad_max, color &c_piece, int &id_piece, int &dice, double alpha, double beta, double (*heuristic)(const Parchis &, int)) const
+{
+    // cout << "Profundidad: " << profundidad << endl;
+    // Si hemos llegado a la profundidad máxima, devolvemos la valoración del estado actual.
+    if (profundidad == profundidad_max)
+    {
+        return heuristic(parchis, jugador);
+    }
+    // Creamos las variables alpha y beta que se propagan desde el padre.
+    double alfaActual = alpha;
+    double betaActual = beta;
+
+    // Si no, generamos los hijos del estado actual.
+    ParchisBros hijos = parchis.getChildren();
+    // Si no hay hijos, devolvemos la valoración del estado actual.
+    if (hijos.begin() == hijos.end())
+    {
+        return heuristic(parchis, jugador);
+    }
+    // Si hay hijos, iteramos sobre ellos llamando a la poda Alfa Beta, modificando alfa o beta dependiendo de si es un jugador u otro.
+    for (ParchisBros::Iterator it = hijos.begin(); it != hijos.end(); ++it)
+    {
+        // Si el jugador es el jugador actual, actualizaremos alfa que es el mayor valor que puede tomar este nodo
+        if (jugador == parchis.getCurrentPlayerId())
+        {
+            alfaActual = max(alfaActual, Poda_AlfaBeta(*it, jugador, profundidad + 1, profundidad_max, c_piece, id_piece, dice, alfaActual, betaActual, heuristic));
+
+            // Si la profundidad es 1, es decir, la siguiente acción que vamos a realizar y el alfa que tenemos es mayor que el que teníamos, actualizamos la acción que vamos a realizar.
+            if (profundidad == 1 && alfaActual >= alpha)
+            {
+                c_piece = get<0>(parchis.getLastAction());
+                id_piece = get<1>(parchis.getLastAction());
+                dice = get<2>(parchis.getLastAction());
+            }
+
+            // Si alfa es mayor o igual que beta, devolvemos alfa, es decir, podamos los siguientes hijos.
+            if (alfaActual >= betaActual)
+            {
+                return alfaActual;
+            }
+        }
+        else
+        {
+            // Si el jugador es el oponente, actualizaremos beta que es el menor valor que puede tomar este nodo
+            betaActual = min(betaActual, Poda_AlfaBeta(*it, jugador, profundidad + 1, profundidad_max, c_piece, id_piece, dice, alfaActual, betaActual, heuristic));
+
+            // Si la profundidad es 1, es decir, la siguiente acción que vamos a realizar y el beta que tenemos es mayor que el alpha que teníamos, actualizamos la acción que vamos a realizar.
+            if (profundidad == 1 && betaActual >= alpha)
+            {
+                c_piece = get<0>(parchis.getLastAction());
+                id_piece = get<1>(parchis.getLastAction());
+                dice = get<2>(parchis.getLastAction());
+            }
+
+            // Si alfa es mayor o igual que beta, devolvemos beta, es decir, podamos los siguientes hijos.
+            if (alfaActual >= betaActual)
+            {
+                return betaActual;
+            }
+        }
+    }
+    if(profundidad == 0)
+        return alfaActual;
+}
+
 void AIPlayer::think(color &c_piece, int &id_piece, int &dice) const
 {
+    // switch (id)
+    // {
+    // case 0:
+    //     thinkAleatorio(c_piece, id_piece, dice);
+    //     break;
+    // case 1:
+    //     thinkAleatorioMasInteligente(c_piece, id_piece, dice);
+    //     break;
+    // case 2:
+    //     thinkFichaMasAdelantada(c_piece, id_piece, dice);
+    //     break;
+    // case 3:
+    //     thinkMejorOpcion(c_piece, id_piece, dice);
+    //     break;
+    // }
+
+    // El siguiente código se proporciona como sugerencia para iniciar la implementación del agente.
+
+    double valor;                           // Almacena el valor con el que se etiqueta el estado tras el proceso de busqueda.
+    double alpha = menosinf, beta = masinf; // Cotas iniciales de la poda AlfaBeta
+    // Llamada a la función para la poda (los parámetros son solo una sugerencia, se pueden modificar).
+    // valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, ValoracionTest);
+    // cout << "Valor MiniMax: " << valor << "  Accion: " << str(c_piece) << " " << id_piece << " " << dice << endl;
+
+    // ----------------------------------------------------------------- //
+
+    // // Si quiero poder manejar varias heurísticas, puedo usar la variable id del agente para usar una u otra.
     switch (id)
     {
     case 0:
-        thinkAleatorio(c_piece, id_piece, dice);
+        valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, ValoracionTest);
         break;
     case 1:
         thinkAleatorioMasInteligente(c_piece, id_piece, dice);
         break;
     case 2:
-        thinkFichaMasAdelantada(c_piece, id_piece, dice);
-        break;
-    case 3:
-        thinkMejorOpcion(c_piece, id_piece, dice);
+        valor = Poda_AlfaBeta(*actual, jugador, 0, 2, c_piece, id_piece, dice, alpha, beta, valoracionDistancia);
         break;
     }
+    cout << "Valor MiniMax: " << valor << "  Accion: " << str(c_piece) << " " << id_piece << " " << dice << endl;
 }
