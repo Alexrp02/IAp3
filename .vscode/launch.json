@@ -7,7 +7,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/build/ParchisGame",
             "cwd": "${workspaceRoot}",
-            "preLaunchTask": "build",
+            "preLaunchTask": "CMake: build",
             // set environment variables
             // "environment": [
             //     {

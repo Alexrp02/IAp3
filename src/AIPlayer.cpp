@@ -346,7 +346,7 @@ double AIPlayer::Poda_AlfaBeta(const Parchis &parchis, int jugador, int profundi
         // Si el jugador es el jugador actual, actualizaremos alfa que es el mayor valor que puede tomar este nodo
         if (jugador == parchis.getCurrentPlayerId())
         {
-            alfaActual = max(alfaActual, Poda_AlfaBeta(*it, jugador, profundidad + 1, profundidad_max, c_piece, id_piece, dice, alfaActual, betaActual, heuristic));
+            alfaActual = max(alfaActual, Poda_AlfaBeta(*it, (jugador+1)%2, profundidad + 1, profundidad_max, c_piece, id_piece, dice, alfaActual, betaActual, heuristic));
 
             // Si la profundidad es 1, es decir, la siguiente acción que vamos a realizar y el alfa que tenemos es mayor que el que teníamos, actualizamos la acción que vamos a realizar.
             if (profundidad == 1 && alfaActual >= alpha)
@@ -365,7 +365,7 @@ double AIPlayer::Poda_AlfaBeta(const Parchis &parchis, int jugador, int profundi
         else
         {
             // Si el jugador es el oponente, actualizaremos beta que es el menor valor que puede tomar este nodo
-            betaActual = min(betaActual, Poda_AlfaBeta(*it, jugador, profundidad + 1, profundidad_max, c_piece, id_piece, dice, alfaActual, betaActual, heuristic));
+            betaActual = min(betaActual, Poda_AlfaBeta(*it, (jugador+1)%2, profundidad + 1, profundidad_max, c_piece, id_piece, dice, alfaActual, betaActual, heuristic));
 
             // Si la profundidad es 1, es decir, la siguiente acción que vamos a realizar y el beta que tenemos es mayor que el alpha que teníamos, actualizamos la acción que vamos a realizar.
             if (profundidad == 1 && betaActual >= alpha)
@@ -382,8 +382,10 @@ double AIPlayer::Poda_AlfaBeta(const Parchis &parchis, int jugador, int profundi
             }
         }
     }
-    if(profundidad == 0)
+    if(jugador == parchis.getCurrentPlayerId())
         return alfaActual;
+    else
+        return betaActual;
 }
 
 void AIPlayer::think(color &c_piece, int &id_piece, int &dice) const
@@ -424,8 +426,9 @@ void AIPlayer::think(color &c_piece, int &id_piece, int &dice) const
         thinkAleatorioMasInteligente(c_piece, id_piece, dice);
         break;
     case 2:
-        valor = Poda_AlfaBeta(*actual, jugador, 0, 2, c_piece, id_piece, dice, alpha, beta, valoracionDistancia);
+        valor = Poda_AlfaBeta(*actual, jugador, 0, 3, c_piece, id_piece, dice, alpha, beta, valoracionDistancia);
         break;
+        //
     }
     cout << "Valor MiniMax: " << valor << "  Accion: " << str(c_piece) << " " << id_piece << " " << dice << endl;
 }
