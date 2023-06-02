@@ -229,6 +229,23 @@ double AIPlayer::valoracionDistancia(const Parchis &estado, int jugador)
 {
     // Sumamos la distancia que hay desde todas las fichas del jugador hasta la meta.
     double valoracion = 0;
+
+    // Si es un movimiento de comer y se come una ficha enemiga, suma 20 puntos.
+    if(jugador == 0){
+        if(estado.isEatingMove() && (get<0>(estado.eatenPiece()) == blue or get<0>(estado.eatenPiece()) == green)){
+            valoracion += 20;
+        }else{
+            valoracion -= 20;
+        }
+    }
+    else{
+        if(estado.isEatingMove() && (get<0>(estado.eatenPiece()) == red or get<0>(estado.eatenPiece()) == yellow)){
+            valoracion += 20;
+        }else{
+            valoracion -= 20;
+        }
+    }
+    
     vector<color> colores = estado.getPlayerColors(jugador);
     for (int i = 0; i < colores.size(); i++)
     {
@@ -347,7 +364,6 @@ double AIPlayer::Poda_AlfaBeta(const Parchis &parchis, int jugador, int profundi
         if (jugador == parchis.getCurrentPlayerId())
         {
             double valor = Poda_AlfaBeta(*it, jugador, profundidad + 1, profundidad_max, c_piece, id_piece, dice, alfaActual, betaActual, heuristic);
-            alfaActual = max(alfaActual, valor);
 
             // Si la profundidad es 1, es decir, la siguiente acción que vamos a realizar y el alfa que tenemos es mayor que el que teníamos, actualizamos la acción que vamos a realizar.
             if (profundidad == 0 && valor > alfaActual)
@@ -356,6 +372,7 @@ double AIPlayer::Poda_AlfaBeta(const Parchis &parchis, int jugador, int profundi
                 id_piece = get<1>((*it).getLastAction());
                 dice = get<2>((*it).getLastAction());
             }
+            alfaActual = max(alfaActual, valor);
 
             // Si alfa es mayor o igual que beta, devolvemos alfa, es decir, podamos los siguientes hijos.
             if (alfaActual >= betaActual)
@@ -367,15 +384,14 @@ double AIPlayer::Poda_AlfaBeta(const Parchis &parchis, int jugador, int profundi
         {
             double valor = Poda_AlfaBeta(*it, jugador, profundidad + 1, profundidad_max, c_piece, id_piece, dice, alfaActual, betaActual, heuristic);
             // Si el jugador es el oponente, actualizaremos beta que es el menor valor que puede tomar este nodo
-            betaActual = min(betaActual, valor);
-
             // Si la profundidad es 1, es decir, la siguiente acción que vamos a realizar y el beta que tenemos es mayor que el alpha que teníamos, actualizamos la acción que vamos a realizar.
             if (profundidad == 0 && betaActual > alpha)
             {
-                c_piece = get<0>(parchis.getLastAction());
-                id_piece = get<1>(parchis.getLastAction());
-                dice = get<2>(parchis.getLastAction());
+                c_piece = get<0>((*it).getLastAction());
+                id_piece = get<1>((*it).getLastAction());
+                dice = get<2>((*it).getLastAction());
             }
+            betaActual = min(betaActual, valor);
 
             // Si alfa es mayor o igual que beta, devolvemos beta, es decir, podamos los siguientes hijos.
             if (alfaActual >= betaActual)

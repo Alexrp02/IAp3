@@ -1,5 +1,16 @@
 {
     "files.associations": {
-        "tuple": "cpp"
+        "tuple": "cpp",
+        "*.tcc": "cpp",
+        "string": "cpp",
+        "unordered_map": "cpp",
+        "string_view": "cpp",
+        "array": "cpp",
+        "memory": "cpp",
+        "format": "cpp",
+        "istream": "cpp",
+        "functional": "cpp",
+        "utility": "cpp",
+        "variant": "cpp"
     }
 }
