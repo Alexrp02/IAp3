@@ -230,6 +230,19 @@ double AIPlayer::valoracionDistancia(const Parchis &estado, int jugador)
     // Sumamos la distancia que hay desde todas las fichas del jugador hasta la meta.
     double valoracion = 0;
 
+    if (estado.getItemAcquired() == bullet) {
+        valoracion += 40;
+    }
+
+    // Si se llega a la meta y es el jugador, devuelve victoria
+    if (estado.gameOver() && estado.getWinner() == jugador)
+    {
+        return gana;
+    }else if (estado.gameOver())
+    {
+        return pierde;
+    }
+
     // Si es un movimiento de comer y se come una ficha enemiga, suma 20 puntos.
     if(jugador == 0){
         if(estado.isEatingMove() && (get<0>(estado.eatenPiece()) == blue or get<0>(estado.eatenPiece()) == green)){
