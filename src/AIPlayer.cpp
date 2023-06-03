@@ -1,5 +1,6 @@
 #include "AIPlayer.h"
 #include "Parchis.h"
+#include <algorithm>
 
 const double masinf = 9999999999.0, menosinf = -9999999999.0;
 const double gana = masinf - 1, pierde = menosinf + 1;
@@ -230,10 +231,6 @@ double AIPlayer::valoracionDistancia(const Parchis &estado, int jugador)
     // Sumamos la distancia que hay desde todas las fichas del jugador hasta la meta.
     double valoracion = 0;
 
-    if (estado.getItemAcquired() == bullet) {
-        valoracion += 40;
-    }
-
     // Si se llega a la meta y es el jugador, devuelve victoria
     if (estado.gameOver() && estado.getWinner() == jugador)
     {
@@ -241,6 +238,20 @@ double AIPlayer::valoracionDistancia(const Parchis &estado, int jugador)
     }else if (estado.gameOver())
     {
         return pierde;
+    }
+
+    // Si tiene fichas en casa, resta 10 puntos por cada una.
+    for(auto& color : estado.getPlayerColors(jugador)){
+        if(estado.piecesAtHome(color) > 0){
+            valoracion -= 10 * estado.piecesAtHome(color);
+        }
+    }
+
+    // Por cada ficha del rival en casa, suma 10 puntos
+    for(auto& color : estado.getPlayerColors((jugador + 1) % 2)){
+        if(estado.piecesAtHome(color) > 0){
+            valoracion += 10 * estado.piecesAtHome(color);
+        }
     }
 
     // Si es un movimiento de comer y se come una ficha enemiga, suma 20 puntos.
@@ -268,7 +279,7 @@ double AIPlayer::valoracionDistancia(const Parchis &estado, int jugador)
             valoracion -= estado.distanceToGoal(c, j);
         }
     }
-    // Le restamos la distancia que tiene el otro jugador
+    // Le sumamos la distancia que tiene el otro jugador
     int oponente = (jugador + 1) % 2;
     colores = estado.getPlayerColors(oponente);
     for (int i = 0; i < colores.size(); i++)
