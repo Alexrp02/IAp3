@@ -226,7 +226,8 @@ void AIPlayer::thinkMejorOpcion(color &c_piece, int &id_piece, int &dice) const
     }
 }
 
-double AIPlayer::valoracion2(const Parchis &estado, int jugador) {
+double AIPlayer::valoracion2(const Parchis &estado, int jugador)
+{
     // Restamos la distancia que hay desde todas las fichas del jugador hasta la meta.
     double valoracion = 0;
 
@@ -234,7 +235,8 @@ double AIPlayer::valoracion2(const Parchis &estado, int jugador) {
     if (estado.gameOver() && estado.getWinner() == jugador)
     {
         return gana;
-    }else if (estado.gameOver())
+    }
+    else if (estado.gameOver())
     {
         return pierde;
     }
@@ -243,8 +245,15 @@ double AIPlayer::valoracion2(const Parchis &estado, int jugador) {
     for (int i = 0; i < colores.size(); i++)
     {
         // Por cada ficha en casa, restamos 73
-        valoracion -= estado.piecesAtHome(colores[i])* 73;
+        valoracion -= estado.piecesAtHome(colores[i]) * 73;
         color c = colores[i];
+
+        // Si tenemos fichas de este color en la meta y en el último movimiento se ha movido una ficha de este color, sumamos 10 por cada ficha
+        if (estado.piecesAtGoal(colores[i]) > 0 && get<0>(estado.getLastAction()) == colores[i])
+        {
+            valoracion += estado.piecesAtGoal(colores[i])* 10;
+        }
+
         for (int j = 0; j < 3; j++)
         {
             valoracion -= estado.distanceToGoal(c, j);
@@ -253,20 +262,27 @@ double AIPlayer::valoracion2(const Parchis &estado, int jugador) {
 
     // Le sumamos la distancia que tiene el otro jugador
     int oponente = (jugador + 1) % 2;
-    int valoracion_oponente = 0 ;
+    int valoracion_oponente = 0;
     colores = estado.getPlayerColors(oponente);
     for (int i = 0; i < colores.size(); i++)
     {
         // Por cada ficha en casa, sumamos 73
-        valoracion += estado.piecesAtHome(colores[i])* 73;
+        valoracion_oponente += estado.piecesAtHome(colores[i]) * 73;
         color c = colores[i];
+
+        // Si el rival tiene fichas de este color en la meta y en el último movimiento se ha movido una ficha de este color, restamos 10 por cada ficha
+        if (estado.piecesAtGoal(colores[i]) > 0 && get<0>(estado.getLastAction()) == colores[i])
+        {
+            valoracion -= estado.piecesAtGoal(colores[i])* 10;
+        }
+
         for (int j = 0; j < 3; j++)
         {
             valoracion_oponente += estado.distanceToGoal(c, j);
         }
     }
 
-    return valoracion+valoracion_oponente;
+    return valoracion + valoracion_oponente;
 }
 
 double AIPlayer::valoracionDistancia(const Parchis &estado, int jugador)
@@ -278,7 +294,8 @@ double AIPlayer::valoracionDistancia(const Parchis &estado, int jugador)
     if (estado.gameOver() && estado.getWinner() == jugador)
     {
         return gana;
-    }else if (estado.gameOver())
+    }
+    else if (estado.gameOver())
     {
         return pierde;
     }
@@ -290,35 +307,47 @@ double AIPlayer::valoracionDistancia(const Parchis &estado, int jugador)
     }
 
     // Si tiene fichas en casa, resta 10 puntos por cada una.
-    for(auto& color : estado.getPlayerColors(jugador)){
-        if(estado.piecesAtHome(color) > 0){
+    for (auto &color : estado.getPlayerColors(jugador))
+    {
+        if (estado.piecesAtHome(color) > 0)
+        {
             valoracion -= 10 * estado.piecesAtHome(color);
         }
     }
 
     // Por cada ficha del rival en casa, suma 10 puntos
-    for(auto& color : estado.getPlayerColors((jugador + 1) % 2)){
-        if(estado.piecesAtHome(color) > 0){
+    for (auto &color : estado.getPlayerColors((jugador + 1) % 2))
+    {
+        if (estado.piecesAtHome(color) > 0)
+        {
             valoracion += 10 * estado.piecesAtHome(color);
         }
     }
 
     // Si es un movimiento de comer y se come una ficha enemiga, suma 20 puntos.
-    if(jugador == 0){
-        if(estado.isEatingMove() && (get<0>(estado.eatenPiece()) == blue or get<0>(estado.eatenPiece()) == green)){
+    if (jugador == 0)
+    {
+        if (estado.isEatingMove() && (get<0>(estado.eatenPiece()) == blue or get<0>(estado.eatenPiece()) == green))
+        {
             valoracion += 20;
-        }else{
+        }
+        else
+        {
             valoracion -= 20;
         }
     }
-    else{
-        if(estado.isEatingMove() && (get<0>(estado.eatenPiece()) == red or get<0>(estado.eatenPiece()) == yellow)){
+    else
+    {
+        if (estado.isEatingMove() && (get<0>(estado.eatenPiece()) == red or get<0>(estado.eatenPiece()) == yellow))
+        {
             valoracion += 20;
-        }else{
+        }
+        else
+        {
             valoracion -= 20;
         }
     }
-    
+
     vector<color> colores = estado.getPlayerColors(jugador);
     for (int i = 0; i < colores.size(); i++)
     {
@@ -330,7 +359,7 @@ double AIPlayer::valoracionDistancia(const Parchis &estado, int jugador)
     }
     // Le sumamos la distancia que tiene el otro jugador
     int oponente = (jugador + 1) % 2;
-    int valoracion_oponente = 0 ;
+    int valoracion_oponente = 0;
     colores = estado.getPlayerColors(oponente);
     for (int i = 0; i < colores.size(); i++)
     {
@@ -340,10 +369,11 @@ double AIPlayer::valoracionDistancia(const Parchis &estado, int jugador)
             valoracion_oponente += estado.distanceToGoal(c, j);
         }
     }
-    if(valoracion_oponente < 40 and find(estado.getAvailableSpecialDices(jugador).begin(), estado.getAvailableSpecialDices(jugador).end(), blue_shell) != estado.getAvailableSpecialDices(jugador).end()){
+    if (valoracion_oponente < 40 and find(estado.getAvailableSpecialDices(jugador).begin(), estado.getAvailableSpecialDices(jugador).end(), blue_shell) != estado.getAvailableSpecialDices(jugador).end())
+    {
         valoracion += 50;
     }
-    return valoracion+valoracion_oponente;
+    return valoracion + valoracion_oponente;
 }
 
 double AIPlayer::ValoracionTest(const Parchis &estado, int jugador)
@@ -477,7 +507,7 @@ double AIPlayer::Poda_AlfaBeta(const Parchis &parchis, int jugador, int profundi
             }
         }
     }
-    if(jugador == parchis.getCurrentPlayerId())
+    if (jugador == parchis.getCurrentPlayerId())
         return alfaActual;
     else
         return betaActual;
