@@ -230,6 +230,15 @@ double AIPlayer::valoracion2(const Parchis &estado, int jugador) {
     // Restamos la distancia que hay desde todas las fichas del jugador hasta la meta.
     double valoracion = 0;
 
+    // Si se llega a la meta y es el jugador, devuelve victoria
+    if (estado.gameOver() && estado.getWinner() == jugador)
+    {
+        return gana;
+    }else if (estado.gameOver())
+    {
+        return pierde;
+    }
+
     vector<color> colores = estado.getPlayerColors(jugador);
     for (int i = 0; i < colores.size(); i++)
     {
