@@ -233,6 +233,8 @@ double AIPlayer::valoracion2(const Parchis &estado, int jugador) {
     vector<color> colores = estado.getPlayerColors(jugador);
     for (int i = 0; i < colores.size(); i++)
     {
+        // Por cada ficha en casa, restamos 73
+        valoracion -= estado.piecesAtHome(colores[i])* 73;
         color c = colores[i];
         for (int j = 0; j < 3; j++)
         {
@@ -246,14 +248,14 @@ double AIPlayer::valoracion2(const Parchis &estado, int jugador) {
     colores = estado.getPlayerColors(oponente);
     for (int i = 0; i < colores.size(); i++)
     {
+        // Por cada ficha en casa, sumamos 73
+        valoracion += estado.piecesAtHome(colores[i])* 73;
         color c = colores[i];
         for (int j = 0; j < 3; j++)
         {
             valoracion_oponente += estado.distanceToGoal(c, j);
         }
     }
-
-    // Por cada ficha en casa, restamos 
 
     return valoracion+valoracion_oponente;
 }
@@ -512,7 +514,9 @@ void AIPlayer::think(color &c_piece, int &id_piece, int &dice) const
     case 2:
         valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, valoracionDistancia);
         break;
-        //
+    case 3:
+        valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, valoracion2);
+        break;
     }
     cout << "Valor MiniMax: " << valor << "  Accion: " << str(c_piece) << " " << id_piece << " " << dice << endl;
 }
