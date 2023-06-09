@@ -226,6 +226,38 @@ void AIPlayer::thinkMejorOpcion(color &c_piece, int &id_piece, int &dice) const
     }
 }
 
+double AIPlayer::valoracion2(const Parchis &estado, int jugador) {
+    // Restamos la distancia que hay desde todas las fichas del jugador hasta la meta.
+    double valoracion = 0;
+
+    vector<color> colores = estado.getPlayerColors(jugador);
+    for (int i = 0; i < colores.size(); i++)
+    {
+        color c = colores[i];
+        for (int j = 0; j < 3; j++)
+        {
+            valoracion -= estado.distanceToGoal(c, j);
+        }
+    }
+
+    // Le sumamos la distancia que tiene el otro jugador
+    int oponente = (jugador + 1) % 2;
+    int valoracion_oponente = 0 ;
+    colores = estado.getPlayerColors(oponente);
+    for (int i = 0; i < colores.size(); i++)
+    {
+        color c = colores[i];
+        for (int j = 0; j < 3; j++)
+        {
+            valoracion_oponente += estado.distanceToGoal(c, j);
+        }
+    }
+
+    // Por cada ficha en casa, restamos 
+
+    return valoracion+valoracion_oponente;
+}
+
 double AIPlayer::valoracionDistancia(const Parchis &estado, int jugador)
 {
     // Sumamos la distancia que hay desde todas las fichas del jugador hasta la meta.
@@ -238,6 +270,12 @@ double AIPlayer::valoracionDistancia(const Parchis &estado, int jugador)
     }else if (estado.gameOver())
     {
         return pierde;
+    }
+
+    // Si se ha usado un dado especial y se ha llegado a la meta con alguna ficha, devolvemos sumamos 50
+    if (estado.isGoalMove() and estado.isSpecialDice(estado.getLastDice()) and estado.getCurrentPlayerId() != jugador)
+    {
+        valoracion += 60;
     }
 
     // Si tiene fichas en casa, resta 10 puntos por cada una.
@@ -281,16 +319,20 @@ double AIPlayer::valoracionDistancia(const Parchis &estado, int jugador)
     }
     // Le sumamos la distancia que tiene el otro jugador
     int oponente = (jugador + 1) % 2;
+    int valoracion_oponente = 0 ;
     colores = estado.getPlayerColors(oponente);
     for (int i = 0; i < colores.size(); i++)
     {
         color c = colores[i];
         for (int j = 0; j < 3; j++)
         {
-            valoracion += estado.distanceToGoal(c, j);
+            valoracion_oponente += estado.distanceToGoal(c, j);
         }
     }
-    return valoracion;
+    if(valoracion_oponente < 40 and find(estado.getAvailableSpecialDices(jugador).begin(), estado.getAvailableSpecialDices(jugador).end(), blue_shell) != estado.getAvailableSpecialDices(jugador).end()){
+        valoracion += 50;
+    }
+    return valoracion+valoracion_oponente;
 }
 
 double AIPlayer::ValoracionTest(const Parchis &estado, int jugador)
