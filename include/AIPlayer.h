@@ -63,6 +63,7 @@ public:
     double Poda_AlfaBeta(const Parchis& parchis, int jugador, int profundidad, int profundidad_max, color &c_piece, int& id_piece, int& dice, double alpha, double beta, double (*heuristic)(const Parchis &, int)) const;
     static double valoracionDistancia(const Parchis &parchis, int jugador);
     static double valoracion2(const Parchis &estado, int jugador) ;
+    static double valoracion3(const Parchis &estado, int jugador) ;
 
     /**
      * @brief Método que determina si el player es inteligente (decide el mejor movimiento)

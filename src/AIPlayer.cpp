@@ -226,6 +226,178 @@ void AIPlayer::thinkMejorOpcion(color &c_piece, int &id_piece, int &dice) const
     }
 }
 
+int piezasEnPasillo(const Parchis &estado, int jugador)
+{
+    // Devuelve el número de piezas que tiene el jugador en el pasillo
+    int piezas = 0;
+    vector<color> colores = estado.getPlayerColors(jugador);
+    for (auto color : colores)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            if (estado.distanceToGoal(color, i) <= 8)
+                piezas++;
+        }
+    }
+    return piezas;
+}
+
+double AIPlayer::valoracion3(const Parchis &estado, int jugador)
+{
+    // Restamos la distancia que hay desde todas las fichas del jugador hasta la meta.
+    double valoracion = 0;
+
+    // Si se llega a la meta y es el jugador, devuelve victoria
+    if (estado.gameOver() && estado.getWinner() == jugador)
+    {
+        return gana;
+    }
+    else if (estado.gameOver())
+    {
+        return pierde;
+    }
+
+    vector<color> colores = estado.getPlayerColors(jugador);
+    for (int i = 0; i < colores.size(); i++)
+    {
+        // Por cada ficha en casa, restamos 5
+        valoracion -= estado.piecesAtHome(colores[i]) * 5;
+        // Por cada ficha en la casilla final sumamos 74
+        valoracion += estado.piecesAtGoal(colores[i]) * 75;
+        color c = colores[i];
+
+        // // Si tenemos fichas de este color en la meta y en el último movimiento se ha movido una ficha de este color, sumamos 10 por cada ficha
+        // if (estado.piecesAtGoal(colores[i]) > 0 && get<0>(estado.getLastAction()) == colores[i])
+        // {
+        //     valoracion += estado.piecesAtGoal(colores[i]) * 10;
+        // }
+
+        for (int j = 0; j < 3; j++)
+        {
+            // Si tenemos dos fichas de este color en la meta, sumamos un tercio de la distancia de la que queda
+            if (estado.piecesAtGoal(colores[i]) > 0)
+            {
+                valoracion += estado.distanceToGoal(c, j) / 3;
+            }
+            valoracion -= estado.distanceToGoal(c, j);
+        }
+    }
+
+    // Le sumamos la distancia que tiene el otro jugador
+    int oponente = (jugador + 1) % 2;
+    int valoracion_oponente = 0;
+    colores = estado.getPlayerColors(oponente);
+    for (int i = 0; i < colores.size(); i++)
+    {
+        // Por cada ficha en casa, sumamos 5
+        valoracion_oponente += estado.piecesAtHome(colores[i]) * 5;
+        // Por cada ficha en la casilla final restamos 74
+        valoracion_oponente -= estado.piecesAtGoal(colores[i]) * 75;
+        color c = colores[i];
+
+        // // Si el rival tiene fichas de este color en la meta y en el último movimiento se ha movido una ficha de este color, restamos 10 por cada ficha
+        // if (estado.piecesAtGoal(colores[i]) > 0 && get<0>(estado.getLastAction()) == colores[i])
+        // {
+        //     valoracion -= estado.piecesAtGoal(colores[i]) * 10;
+        // }
+
+        for (int j = 0; j < 3; j++)
+        {
+            // Si tenemos dos fichas de este color en la meta, restamos un tercio de la distancia de la que queda
+            if (estado.piecesAtGoal(colores[i]) > 0)
+            {
+                valoracion -= estado.distanceToGoal(c, j) / 3;
+            }
+            valoracion_oponente += estado.distanceToGoal(c, j);
+        }
+    }
+
+    // Si tenemos el caparazón azul y no lo cogimos en el anterior turno y el rival tiene alguna ficha a menos de 8 casillas de la meta, restaremos 75
+    if (piezasEnPasillo(estado, oponente) > 0 and find(estado.getSpecialDices(jugador).begin(), estado.getSpecialDices(jugador).end(), blue_shell) != estado.getSpecialDices(jugador).end())
+    {
+        valoracion -= 75;
+    }
+
+    // Si tenemos más de una pieza en el pasillo final y el rival no tiene el caparazón azul, sumamos 67 por cada pieza
+    if (piezasEnPasillo(estado, jugador) > 0 and find(estado.getSpecialDices(oponente).begin(), estado.getSpecialDices(oponente).end(), blue_shell) == estado.getSpecialDices(oponente).end())
+    {
+        valoracion += 67 * piezasEnPasillo(estado, jugador);
+    }
+
+    // Si en el anterior turno cogimos la bala, el caparazon azul o la estrella sumamos 40
+    if ((estado.getItemAcquired() == bullet or estado.getItemAcquired() == blue_shell or estado.getItemAcquired() == star) and estado.getCurrentPlayerId() != jugador)
+    {
+        valoracion += 40;
+    }
+
+    // Si en el anterior turno el rival cogió la bala, el caparazon azul o la estrella restamos 40
+    if ((estado.getItemAcquired() == bullet or estado.getItemAcquired() == blue_shell or estado.getItemAcquired() == star) and estado.getCurrentPlayerId() == jugador)
+    {
+        valoracion -= 40;
+    }
+
+    // Si en el último turno obtuvimos el champiñon, sumamos 8
+    if (estado.getItemAcquired() == mushroom and estado.getCurrentPlayerId() != jugador)
+    {
+        valoracion += 8;
+    }
+    else if (estado.getItemAcquired() == mushroom and estado.getCurrentPlayerId() == jugador)
+    {
+        valoracion -= 8;
+    }
+
+    // Si en el turno anterior el jugador se comió una ficha, sumamos 20
+    if (estado.isEatingMove() and estado.getCurrentPlayerId() == jugador)
+    {
+        valoracion += 20;
+    }
+    else if (estado.isEatingMove() and estado.getCurrentPlayerId() != jugador)
+    {
+        valoracion -= 20;
+    }
+
+    // Si en el turno anterior se metió una ficha en la meta, sumamos 10 o restamos 10 dependiendo de si fue el jugador o el rival
+    if (estado.isGoalMove() and estado.getCurrentPlayerId() == jugador)
+    {
+        valoracion += 10;
+    }
+    else if (estado.isGoalMove() and estado.getCurrentPlayerId() != jugador)
+    {
+        valoracion -= 10;
+    }
+
+    // Si el jugador tiene la bala, sumamos 40
+    if (find(estado.getSpecialDices(jugador).begin(), estado.getSpecialDices(jugador).end(), bullet) != estado.getSpecialDices(jugador).end())
+    {
+        valoracion += 40;
+    }
+    if (find(estado.getSpecialDices(oponente).begin(), estado.getSpecialDices(oponente).end(), bullet) != estado.getSpecialDices(oponente).end())
+    {
+        valoracion -= 40;
+    }
+
+    // Si el jugador tiene el champiñon, sumamos 8
+    if (find(estado.getSpecialDices(jugador).begin(), estado.getSpecialDices(jugador).end(), mushroom) != estado.getSpecialDices(jugador).end())
+    {
+        valoracion += 8;
+    }
+    if (find(estado.getSpecialDices(oponente).begin(), estado.getSpecialDices(oponente).end(), mushroom) != estado.getSpecialDices(oponente).end())
+    {
+        valoracion -= 8;
+    }
+
+    // Si se ha usado un dado especial y se ha llegado a la meta con alguna ficha, sumamos 50
+    if (estado.isGoalMove() and estado.isSpecialDice(estado.getLastDice()) and estado.getCurrentPlayerId() == jugador)
+    {
+        valoracion += 10;
+    }else if (estado.isGoalMove() and estado.isSpecialDice(estado.getLastDice()) and estado.getCurrentPlayerId() != jugador)
+    {
+        valoracion -= 10;
+    }
+
+    return valoracion + valoracion_oponente;
+}
+
 double AIPlayer::valoracion2(const Parchis &estado, int jugador)
 {
     // Restamos la distancia que hay desde todas las fichas del jugador hasta la meta.
@@ -452,6 +624,14 @@ double AIPlayer::Poda_AlfaBeta(const Parchis &parchis, int jugador, int profundi
     if (profundidad == profundidad_max)
     {
         return heuristic(parchis, jugador);
+    }
+    if(parchis.gameOver()){
+        if(parchis.getWinner() == jugador){
+            return gana;
+        }
+        else{
+            return pierde;
+        }
     }
     // Creamos las variables alpha y beta que se propagan desde el padre.
     double alfaActual = alpha;
