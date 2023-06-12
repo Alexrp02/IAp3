@@ -390,7 +390,8 @@ double AIPlayer::valoracion3(const Parchis &estado, int jugador)
     if (estado.isGoalMove() and estado.isSpecialDice(estado.getLastDice()) and estado.getCurrentPlayerId() == jugador)
     {
         valoracion += 10;
-    }else if (estado.isGoalMove() and estado.isSpecialDice(estado.getLastDice()) and estado.getCurrentPlayerId() != jugador)
+    }
+    else if (estado.isGoalMove() and estado.isSpecialDice(estado.getLastDice()) and estado.getCurrentPlayerId() != jugador)
     {
         valoracion -= 10;
     }
@@ -416,20 +417,64 @@ double AIPlayer::valoracion2(const Parchis &estado, int jugador)
     vector<color> colores = estado.getPlayerColors(jugador);
     for (int i = 0; i < colores.size(); i++)
     {
-        // Por cada ficha en casa, restamos 73
-        valoracion -= estado.piecesAtHome(colores[i]) * 73;
-        color c = colores[i];
-
-        // Si tenemos fichas de este color en la meta y en el último movimiento se ha movido una ficha de este color, sumamos 10 por cada ficha
-        if (estado.piecesAtGoal(colores[i]) > 0 && get<0>(estado.getLastAction()) == colores[i])
+        // Si tengo más fichas de este color que del otro, sumamos 15
+        if (estado.piecesAtGoal(colores[i]) > estado.piecesAtGoal(colores[(i + 1) % 2]))
         {
-            valoracion += estado.piecesAtGoal(colores[i])* 10;
+            valoracion += 15;
         }
+        // Por cada ficha en casa, restamos 10
+        valoracion -= estado.piecesAtHome(colores[i]) * 10;
+        // Por cada ficha en la meta, sumamos 10
+        valoracion += estado.piecesAtGoal(colores[i]) * 10;
+        color c = colores[i];
 
         for (int j = 0; j < 3; j++)
         {
-            valoracion -= estado.distanceToGoal(c, j);
+            valoracion += 73 - estado.distanceToGoal(c, j);
+            // Si la ficha está a salvo, sumaremos 5 (que es lo que nos cuesta sacarla de casa)
+            if (estado.isSafePiece(c, j))
+            {
+                valoracion += 5;
+            }
         }
+    }
+
+    // Dependiendo de los dados especiales que tenga el jugador, sumamos una puntuación distinta
+    auto dadosEspeciales = estado.getSpecialDices(jugador);
+    for (auto dado : dadosEspeciales)
+    {
+        switch (dado)
+        {
+        case star:
+            valoracion += 50;
+            break;
+        case bullet:
+            valoracion += 40;
+            break;
+        case blue_shell:
+            valoracion += 40;
+            break;
+        case mushroom:
+            valoracion += 8;
+            break;
+        case red_shell:
+            valoracion += 30;
+            break;
+        case shock:
+            valoracion += 27.5;
+            break;
+        case horn:
+            valoracion += 25;
+            break;
+        default:
+            break;
+        }
+    }
+
+    // Si el jugador se ha comido una ficha en el último turno, sumamos 25 (20 de movimiento más los 5 que gasta el rival para sacarla de casa)
+    if (estado.isEatingMove() and estado.getCurrentPlayerId() == jugador)
+    {
+        valoracion += 25;
     }
 
     // Le sumamos la distancia que tiene el otro jugador
@@ -438,23 +483,66 @@ double AIPlayer::valoracion2(const Parchis &estado, int jugador)
     colores = estado.getPlayerColors(oponente);
     for (int i = 0; i < colores.size(); i++)
     {
-        // Por cada ficha en casa, sumamos 73
-        valoracion_oponente += estado.piecesAtHome(colores[i]) * 73;
-        color c = colores[i];
-
-        // Si el rival tiene fichas de este color en la meta y en el último movimiento se ha movido una ficha de este color, restamos 10 por cada ficha
-        if (estado.piecesAtGoal(colores[i]) > 0 && get<0>(estado.getLastAction()) == colores[i])
+        // Si tengo más fichas de este color que del otro, sumamos 15
+        if (estado.piecesAtGoal(colores[i]) > estado.piecesAtGoal(colores[(i + 1) % 2]))
         {
-            valoracion -= estado.piecesAtGoal(colores[i])* 10;
+            valoracion_oponente += 15;
         }
+        // Por cada ficha en casa, restamos 10
+        valoracion_oponente -= estado.piecesAtHome(colores[i]) * 10;
+        // Por cada ficha en la meta, sumamos 10
+        valoracion_oponente += estado.piecesAtGoal(colores[i]) * 10;
+        color c = colores[i];
 
         for (int j = 0; j < 3; j++)
         {
-            valoracion_oponente += estado.distanceToGoal(c, j);
+            valoracion_oponente += 73 - estado.distanceToGoal(c, j);
+            // Si la ficha está a salvo, sumaremos 5 (que es lo que nos cuesta sacarla de casa)
+            if (estado.isSafePiece(c, j))
+            {
+                valoracion_oponente += 5;
+            }
+        }
+    }
+    // Dependiendo de los dados especiales que tenga el rival, sumamos una puntuación distinta
+    dadosEspeciales = estado.getSpecialDices(oponente);
+    for (auto dado : dadosEspeciales)
+    {
+        switch (dado)
+        {
+        case star:
+            valoracion_oponente += 50;
+            break;
+        case bullet:
+            valoracion_oponente += 40;
+            break;
+        case blue_shell:
+            valoracion_oponente += 40;
+            break;
+        case mushroom:
+            valoracion_oponente += 8;
+            break;
+        case red_shell:
+            valoracion_oponente += 30;
+            break;
+        case shock:
+            valoracion_oponente += 27.5;
+            break;
+        case horn:
+            valoracion_oponente += 25;
+            break;
+        default:
+            break;
         }
     }
 
-    return valoracion + valoracion_oponente;
+    // Si el oponente se ha comido una ficha en el último turno, sumamos 25 (20 de movimiento más los 5 que gasta el jugador para sacarla de casa)
+    if (estado.isEatingMove() and estado.getCurrentPlayerId() == oponente)
+    {
+        valoracion_oponente += 25;
+    }
+
+    return valoracion - valoracion_oponente;
 }
 
 double AIPlayer::valoracionDistancia(const Parchis &estado, int jugador)
@@ -621,17 +709,9 @@ double AIPlayer::Poda_AlfaBeta(const Parchis &parchis, int jugador, int profundi
 {
     // cout << "Profundidad: " << profundidad << endl;
     // Si hemos llegado a la profundidad máxima, devolvemos la valoración del estado actual.
-    if (profundidad == profundidad_max)
+    if (profundidad == profundidad_max or parchis.gameOver())
     {
         return heuristic(parchis, jugador);
-    }
-    if(parchis.gameOver()){
-        if(parchis.getWinner() == jugador){
-            return gana;
-        }
-        else{
-            return pierde;
-        }
     }
     // Creamos las variables alpha y beta que se propagan desde el padre.
     double alfaActual = alpha;
@@ -639,11 +719,6 @@ double AIPlayer::Poda_AlfaBeta(const Parchis &parchis, int jugador, int profundi
 
     // Si no, generamos los hijos del estado actual.
     ParchisBros hijos = parchis.getChildren();
-    // Si no hay hijos, devolvemos la valoración del estado actual.
-    if (hijos.begin() == hijos.end())
-    {
-        return heuristic(parchis, jugador);
-    }
     // Si hay hijos, iteramos sobre ellos llamando a la poda Alfa Beta, modificando alfa o beta dependiendo de si es un jugador u otro.
     for (ParchisBros::Iterator it = hijos.begin(); it != hijos.end(); ++it)
     {
@@ -659,6 +734,7 @@ double AIPlayer::Poda_AlfaBeta(const Parchis &parchis, int jugador, int profundi
                 id_piece = get<1>((*it).getLastAction());
                 dice = get<2>((*it).getLastAction());
             }
+
             alfaActual = max(alfaActual, valor);
 
             // Si alfa es mayor o igual que beta, devolvemos alfa, es decir, podamos los siguientes hijos.
@@ -728,13 +804,13 @@ void AIPlayer::think(color &c_piece, int &id_piece, int &dice) const
         valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, ValoracionTest);
         break;
     case 1:
-        thinkAleatorioMasInteligente(c_piece, id_piece, dice);
+        valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, valoracion2);
         break;
     case 2:
         valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, valoracionDistancia);
         break;
     case 3:
-        valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, valoracion2);
+        thinkAleatorioMasInteligente(c_piece, id_piece, dice);
         break;
     }
     cout << "Valor MiniMax: " << valor << "  Accion: " << str(c_piece) << " " << id_piece << " " << dice << endl;
